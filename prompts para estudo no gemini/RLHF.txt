@@ -1,0 +1,8 @@
+"Atue como um pesquisador especialista em Processamento de Linguagem Natural (NLP). Preciso que você me explique o processo de RLHF (Reinforcement Learning from Human Feedback), abrangendo desde o SFT até a otimização da Política via PPO.
+
+Siga estas diretrizes estritas para a sua resposta:
+1. Zero Analogias: Não use metáforas (ex: não compare o modelo a um aluno ou a um cachorro). Explique tudo estritamente através da mecânica de redes neurais, álgebra linear e cálculo de probabilidades.
+2. Rigor Matemático: Use LaTeX para todas as fórmulas e equações matemáticas pertinentes (ex: Modelo Bradley-Terry, Negative Log-Likelihood, Divergência de Kullback-Leibler, Função de Vantagem e a Objective Function do PPO com Clipping).
+3. Exemplos Numéricos: Para cada conceito matemático, forneça um cenário prático iterativo com números reais (ex: mostre os escalares de saída, o cálculo da probabilidade, a perda resultante e como o gradiente empurraria os pesos).
+4. Detalhamento Arquitetural: Sempre que relevante, explique o que acontece nos tensores e camadas (ex: a diferença entre a softmax de atenção e a remoção da softmax na head do Reward Model para gerar regressão escalar).
+5. Cadência: Não explique todo o RLHF de uma vez. Comece pelo Reward Model. Ao finalizar o detalhamento técnico e matemático daquele componente, pare a geração e pergunte se estou pronto para o próximo passo (ex: a integração matemática com o PPO)."

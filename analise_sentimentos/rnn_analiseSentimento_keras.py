@@ -26,12 +26,18 @@ model = keras.Sequential([
 
     layers.SimpleRNN(units=64, dropout=0.2),
 
-    layers.Dense(32, activation='relu'),
+    layers.Dense(64, activation='relu'),
     #definindo função de ativação (sigmoid)
+
+    layers.Dense(32, activation='tanh'),
+
     layers.Dense(1, activation='sigmoid')
+
 ])
 
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 #trainando o modelo, definindo epochs, batch_size e distinguindo dados de treino e dados de teste
-model.fit(x_train, y_train, epochs=1, batch_size=64, validation_data=(x_val, y_val))
+model.fit(x_train, y_train, epochs=5, batch_size=32, validation_data=(x_val, y_val))
+
+model.summary()

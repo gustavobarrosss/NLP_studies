@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parsing de Documentos — Workshop CEIA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ceia-blue-dark: #0B3D91;
+    --ceia-blue: #1565C0;
+    --ceia-blue-mid: #1E88E5;
+    --ceia-cyan: #29B6F6;
+    --ceia-white: #FFFFFF;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #0B3D91;
+  }
+
+  .reveal-viewport {
+    background: linear-gradient(135deg, var(--ceia-blue-dark) 0%, var(--ceia-blue) 40%, var(--ceia-blue-mid) 100%) center center / cover no-repeat fixed;
+  }
+
+  .reveal {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 32px;
+    background: transparent;
+  }
+
+  /* Use one global background to avoid blocky divisions */
+  .reveal .slides { background: transparent !important; }
+
+  /* Slide containers */
+  .reveal .slides section,
+  .reveal .slides section > section {
+    background: transparent;
+    color: var(--ceia-white);
+    padding: 40px 50px;
+    box-sizing: border-box;
+  }
+
+  /* Geometric decorations */
+  .reveal .slides section > section::before,
+  .reveal .slides > section:not(:has(section))::before {
+    content: '';
+    position: absolute;
+    top: -30px; left: -30px;
+    width: 180px; height: 180px;
+    border: 2px solid rgba(255,255,255,0.1);
+    transform: rotate(45deg);
+    pointer-events: none; z-index: 0;
+  }
+  .reveal .slides section > section::after,
+  .reveal .slides > section:not(:has(section))::after {
+    content: '';
+    position: absolute;
+    bottom: -50px; right: -20px;
+    width: 220px; height: 220px;
+    border: 2px solid rgba(255,255,255,0.07);
+    border-radius: 50%;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Typography */
+  .reveal h1 {
+    font-size: 2.2em; font-weight: 800;
+    color: var(--ceia-white);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .reveal h2 {
+    font-size: 1.4em; font-weight: 700;
+    color: var(--ceia-white);
+  }
+  .reveal h3 {
+    font-size: 1.0em; font-weight: 600;
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* Code blocks - dark bg for contrast */
+  .reveal pre {
+    width: 95%; font-size: 0.48em;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .reveal pre code {
+    padding: 14px !important;
+    max-height: 480px;
+    border-radius: 8px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    background: #1e1e2e !important;
+  }
+
+  /* Tables */
+  .reveal table {
+    font-size: 0.6em; margin: 0 auto;
+    border-collapse: collapse;
+  }
+  .reveal table th {
+    background: rgba(255,255,255,0.15);
+    color: var(--ceia-white);
+    padding: 8px 13px;
+    border-bottom: 2px solid rgba(255,255,255,0.3);
+    font-weight: 700;
+  }
+  .reveal table td {
+    padding: 6px 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.92);
+  }
+  .reveal table tr:hover td { background: rgba(255,255,255,0.06); }
+
+  /* Boxes */
+  .reveal .highlight-box {
+    background: rgba(255,255,255,0.1);
+    border-left: 4px solid var(--ceia-cyan);
+    padding: 12px 18px; border-radius: 6px;
+    margin: 10px 0; text-align: left; font-size: 0.72em;
+  }
+  .reveal .warn-box {
+    background: rgba(239,83,80,0.18);
+    border-left: 4px solid #ef5350;
+    padding: 12px 18px; border-radius: 6px;
+    margin: 10px 0; text-align: left; font-size: 0.72em;
+  }
+  .reveal .result-box {
+    background: rgba(102,187,106,0.18);
+    border-left: 4px solid #66BB6A;
+    padding: 12px 18px; border-radius: 6px;
+    margin: 10px 0; text-align: left; font-size: 0.72em;
+  }
+
+  /* Tags */
+  .reveal .tool-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: var(--ceia-white);
+    padding: 4px 16px; border-radius: 20px;
+    font-size: 0.7em; margin: 3px;
+    border: 1px solid rgba(255,255,255,0.25);
+    font-weight: 600;
+  }
+
+  /* Layout */
+  .cols { display: flex; gap: 14px; align-items: flex-start; }
+  .cols-3 > * { flex: 1; min-width: 0; }
+  .cols > * { flex: 1; }
+  .reveal .vs { color: #FFD54F; font-weight: 800; font-size: 1.2em; }
+  .reveal .subtitle { color: rgba(255,255,255,0.65); font-size: 0.65em; }
+  .reveal .green { color: #66BB6A; }
+  .reveal .red { color: #ef5350; }
+  .reveal .yellow { color: #FFD54F; }
+  .reveal .purple { color: #CE93D8; }
+  .reveal .small { font-size: 0.7em; }
+  .reveal .label {
+    font-size: 0.5em; text-transform: uppercase;
+    letter-spacing: 2.5px; font-weight: 700;
+    color: var(--ceia-cyan); margin-bottom: 4px;
+  }
+
+  .reveal blockquote {
+    background: rgba(255,255,255,0.08);
+    border-left: 3px solid var(--ceia-cyan);
+    padding: 10px 20px; font-size: 0.7em;
+    width: 85%; color: rgba(255,255,255,0.9);
+    font-style: normal;
+  }
+
+  .reveal .pipeline-box {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 20px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.52em; text-align: left; line-height: 1.8;
+  }
+
+  /* CEIA Logo */
+  .ceia-logo {
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .ceia-logo-img {
+    width: 360px;
+    max-width: 70vw;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.25));
+  }
+  .cover-logo-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .final-logo-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Corner branding */
+  .slide-brand {
+    position: absolute; bottom: 14px; right: 22px;
+    opacity: 0.3; z-index: 5;
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; color: var(--ceia-white);
+  }
+  .slide-brand svg { width: 18px; height: 18px; }
+
+  .slide-number { font-size: 13px !important; }
+  .reveal .progress { color: var(--ceia-cyan); height: 4px; }
+  .reveal .controls { color: rgba(255,255,255,0.4); }
+  .reveal p, .reveal li { font-size: 0.9em; }
+  .reveal table { font-size: 0.72em; }
+
+  /* Visual mockups for document examples */
+  .doc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 14px;
+  }
+  .doc-card {
+    background: rgba(255,255,255,0.96);
+    color: #1f2937;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 12px;
+    min-height: 250px;
+    text-align: left;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.28);
+    display: flex;
+    flex-direction: column;
+  }
+  .doc-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.55em;
+    color: #0B3D91;
+    letter-spacing: 0.4px;
+  }
+  .doc-line {
+    height: 8px;
+    margin: 6px 0;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #4b5563, #6b7280);
+  }
+  .doc-line.short { width: 58%; }
+  .doc-line.mid { width: 78%; }
+  .doc-line.long { width: 96%; }
+  .pdf-sheet {
+    background: #fff;
+    border: 1px solid #d7deea;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: inset 0 0 0 1px #eef2f8;
+  }
+  .pdf-text {
+    margin: 0 0 6px 0;
+    font-size: 0.45em;
+    color: #111827;
+    line-height: 1.35;
+  }
+  .scan {
+    filter: grayscale(0.15) contrast(0.82) brightness(0.95);
+    transform: rotate(-1.1deg);
+  }
+  .ocr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 10px;
+  }
+  .ocr-shot {
+    background: #f9fbff;
+    color: #1f2937;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 12px;
+    text-align: center;
+    min-height: 120px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.28);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .ocr-shot h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.55em;
+    color: #0B3D91;
+    text-align: left;
+  }
+  .ocr-shot pre {
+    margin: 0;
+    width: 100%;
+    font-size: 0.46em;
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid #dbe3ee;
+    box-shadow: none;
+    text-align: left;
+  }
+  .ocr-shot.blur pre {
+    filter: blur(0.9px) contrast(0.82) saturate(0.78);
+  }
+  .input-box {
+    background: rgba(255,255,255,0.09);
+    border-left: 4px solid #90CAF9;
+    padding: 10px 14px;
+    border-radius: 6px;
+    text-align: left;
+    margin: 8px 0 12px;
+    font-size: 0.62em;
+    line-height: 1.35;
+  }
+  .part2-original pre {
+    font-size: 0.58em !important;
+  }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<section>
+  <div class="cover-logo-wrap">
+    <img src="logo_ceia_transparent.png" alt="Logo CEIA" class="ceia-logo-img" style="margin-bottom: 18px;">
+  </div>
+  <h1 style="font-size:2.4em;">Parsing de Documentos</h1>
+  <h4 style="color:rgba(255,255,255,0.85);">Gustavo Barros, Davi Silva e Kalil Fenner</h4>
+  <br>
+  <p class="subtitle">5&ordm; Encontro &mdash; Grupo de Estudos NLP (INF-UFG / CEIA)</p>
+  <p style="color:rgba(255,255,255,0.4);font-size:0.5em;margin-top:25px;">Do HTML bruto ao JSON estruturado &mdash; todo o pipeline</p>
+</section>
+
+<section data-background-image="image.png" data-background-size="contain" data-background-position="center" data-background-color="#f0f4fa">
+</section>
+
+
+<section>
+  <h2>Roteiro</h2>
+  <table>
+    <thead><tr><th>Parte</th><th>Tema</th><th>Ferramentas</th></tr></thead>
+    <tbody>
+      <tr class="fragment"><td><strong>1</strong></td><td>Como os dados chegam</td><td>Formatos brutos</td></tr>
+      <tr class="fragment"><td><strong>2</strong></td><td>HTML e Regex</td><td>BeautifulSoup, regex</td></tr>
+      <tr class="fragment"><td><strong>3</strong></td><td>PDFs simples</td><td>PyMuPDF, pdfplumber</td></tr>
+      <tr class="fragment"><td><strong>4</strong></td><td>Documentos complexos</td><td>Docling, Unstructured</td></tr>
+      <tr class="fragment"><td><strong>5</strong></td><td>OCR (escaneados)</td><td>Tesseract, Gemini (visão)</td></tr>
+      <tr class="fragment"><td><strong>6</strong></td><td>Extração estruturada</td><td>LLM &rarr; JSON</td></tr>
+    </tbody>
+  </table>
+  <div class="slide-brand"><svg viewBox="0 0 100 100"><circle cx="35" cy="40" r="5" fill="rgba(255,255,255,0.6)"/><circle cx="50" cy="30" r="3.5" fill="rgba(255,255,255,0.6)"/><line x1="35" y1="40" x2="50" y2="30" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/></svg> CEIA</div>
+</section>
+
+<section>
+  <section>
+    <h1>Parte 1</h1>
+    <h2>Como os Dados Chegam</h2>
+    <p class="subtitle">O problema antes de qualquer tratamento</p>
+  </section>
+
+  <section data-background-image="arquitetura.png" data-background-size="contain" data-background-position="center" data-background-color="#f0f4fa">
+  </section>
+
+  <section>
+    <h2>1.1 &mdash; HTML / Texto com Marcações</h2>
+    <p>O conteúdo chega <strong>embrulhado em tags</strong></p>
+    <pre><code class="language-html">&lt;h1&gt;CAPÍTULO III&lt;/h1&gt;
+&lt;h2&gt;Da Política Agrícola e Fundiária&lt;/h2&gt;
+&lt;p class="artigo"&gt;&lt;strong&gt;Art. 184.&lt;/strong&gt; Compete à União desapropriar por interesse social...&lt;/p&gt;
+&lt;!-- Nota: Atualizado pela EC 123 --&gt;
+&lt;p class="paragrafo"&gt;§ 1º As benfeitorias úteis...&lt;/p&gt;</code></pre>
+    <div class="warn-box">Tags, atributos, CSS, comentários &mdash; tudo misturado com o conteúdo real.</div>
+  </section>
+
+  <section>
+    <h2>1.2 &mdash; PDF Nativo (Digital)</h2>
+    <p><strong>Parece</strong> texto &mdash; mas por dentro é um stream binário</p>
+    <pre><code class="language-text">%PDF-1.4
+BT /F1 14 Tf 72 770 Td (Art. 184) Tj ET
+BT /F1 11 Tf 72 740 Td (Compete a Uniao desapropriar...) Tj ET
+...
+stream x\x9c\xed]Ko\xe3H\xb2...</code></pre>
+    <div class="warn-box">Texto misturado com <strong>operadores gráficos</strong> e metadados de fonte.</div>
+  </section>
+
+  <section>
+    <h2>1.3 &mdash; PDF com Tabelas</h2>
+    <div class="highlight-box">
+      <strong>O problema central:</strong><br>
+      Célula <code>(linha=2, coluna=3)</code> não existe no arquivo.<br>
+      O que existe é: <em>"texto '13.624,02' na posição x=420, y=305"</em><br><br>
+      A tabela é uma <strong>ilusão visual</strong> &mdash; o PDF só tem coordenadas.
+    </div>
+    <br>
+    <h2>1.4 &mdash; Documento Escaneado</h2>
+    <pre><code class="language-text">Pixel[120,45] = (42, 38, 35)   # marrom escuro (tinta?)
+Pixel[121,45] = (245, 240, 228) # bege (papel?)</code></pre>
+    <div class="warn-box">Não há texto &mdash; só uma <strong>matriz de pixels RGB</strong>. Precisa de OCR.</div>
+  </section>
+
+  <section>
+    <h2>1.5 &mdash; Visão Rápida dos Formatos</h2>
+    <div class="doc-grid">
+      <div class="doc-card">
+        <h4>PDF nativo (texto digital)</h4>
+        <img src="print_artigo182.png" alt="Documento Constitucional Art 184" style="width:100%; object-fit: cover; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); margin-top: auto; margin-bottom: auto;">
+      </div>
+      <div class="doc-card scan">
+        <h4>PDF escaneado (imagem)</h4>
+        <img src="PDF_escaneado.png" alt="PDF escaneado" style="width:100%; object-fit: cover; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); margin-top: auto; margin-bottom: auto;">
+      </div>
+      <div class="doc-card">
+        <h4>PDF com tabela</h4>
+        <img src="print_tabela_bc.png" alt="Tabela Banco Central" style="width:100%; object-fit: cover; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); margin-top: auto; margin-bottom: auto;">
+      </div>
+    </div>
+    <div class="highlight-box">Visualmente parecidos para humanos, mas cada formato exige uma estratégia diferente de parsing.</div>
+  </section>
+
+  <section>
+    <h2>1.6 &mdash; Formatos Semi-Estruturados</h2>
+    <p style="font-size:0.62em; color:rgba(255,255,255,0.75); margin-bottom:10px;">Nem sempre lidamos com PDFs. APIs, dumps de banco de dados e Diários Oficiais costumam entregar os dados nestes formatos:</p>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">JSON</p>
+        <pre><code class="language-json">{
+  "id": "TRX-123",
+  "status": "concluido",
+  "tags": ["pix", "urgente"]
+}</code></pre>
+        <div class="result-box" style="font-size: 0.6em; margin-top: 5px;">
+          Padrão web moderno. Estrutura de chave-valor, fácil de parsear (dicionários em Python). O arquivo inteiro precisa ser lido para a memória.
+        </div>
+      </div>
+      <div>
+        <p class="label">JSONL (JSON Lines)</p>
+        <pre><code class="language-json">{"id": 1, "status": "ok"}
+{"id": 2, "status": "erro"}
+{"id": 3, "status": "ok"}</code></pre>
+        <div class="highlight-box" style="font-size: 0.6em; margin-top: 5px; border-color: #FFD54F;">
+          Um objeto JSON válido por linha. Excelente para <strong>streaming</strong> e datasets gigantes (NLP/LLMs), pois lê-se linha por linha sem estourar a RAM.
+        </div>
+      </div>
+      <div>
+        <p class="label">XML</p>
+        <pre><code class="language-xml">&lt;doc id="123"&gt;
+  &lt;status&gt;concluido&lt;/status&gt;
+  &lt;tag&gt;pix&lt;/tag&gt;
+&lt;/doc&gt;</code></pre>
+        <div class="warn-box" style="font-size: 0.6em; margin-top: 5px;">
+          Baseado em <i>tags</i> (irmão mais velho do HTML). Muito comum em sistemas corporativos legados, NF-e e bases de jurisprudência.
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box" style="margin-top:15px; text-align: center;">
+      <strong>O lado bom:</strong> A estrutura semântica já existe (não precisa de OCR ou pdfplumber). O desafio aqui é apenas mapear chaves complexas/aninhadas para o seu pipeline.
+    </div>
+  </section>
+
+  <section>
+    <h2>1.7 &mdash; Salvando os Dados Extraídos</h2>
+    <p style="font-size:0.62em; color:rgba(255,255,255,0.75); margin-bottom:10px;">Após o parsing, o texto precisa ser persistido. A escolha do formato impacta velocidade, compressão e compatibilidade.</p>
+    <table>
+      <thead><tr><th>Formato</th><th>Tipo</th><th class="green">Vantagens</th><th class="red">Limitações</th><th>Uso típico</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>.txt</strong></td>
+          <td>Texto puro</td>
+          <td>Universal, legível por qualquer ferramenta</td>
+          <td>Sem estrutura, sem tipos, sem compressão</td>
+          <td>Logs, texto corrido, corpora simples</td>
+        </tr>
+        <tr>
+          <td><strong>.csv</strong></td>
+          <td>Tabular (texto)</td>
+          <td>Legível, compatível com Excel e pandas</td>
+          <td>Sem tipos nativos, lento em escala, frágil com texto com vírgulas</td>
+          <td>Dados tabulares pequenos/médios</td>
+        </tr>
+        <tr>
+          <td><strong>.parquet</strong></td>
+          <td>Colunar (binário)</td>
+          <td>Compressão alta, leitura colunar rápida, preserva tipos</td>
+          <td>Não legível por humanos, requer biblioteca</td>
+          <td>Pipelines de ML/NLP, Spark em produção, etc</td>
+        </tr>
+        <tr>
+          <td><strong>.orc</strong></td>
+          <td>Colunar (binário)</td>
+          <td>Compressão superior ao Parquet em alguns casos, otimizado para Hive/Spark</td>
+          <td>Menor suporte fora do ecossistema Hadoop</td>
+          <td>Data lakes, pipelines Spark em produção</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="highlight-box" style="margin-top:10px;"><strong>Regra geral:</strong> texto corrido → <code>.txt</code> &nbsp;|&nbsp; dados tabulares pequenos → <code>.csv</code> &nbsp;|&nbsp; pipeline de ML em escala → <code>.parquet</code></div>
+  </section>
+
+  <section>
+    <h2>Resumo: O Problema</h2>
+    <table>
+      <thead><tr><th>Tipo</th><th>O que vimos</th><th>Desafio</th></tr></thead>
+      <tbody>
+        <tr><td><strong>HTML</strong></td><td>Tags, CSS, comentários</td><td>Separar texto do markup</td></tr>
+        <tr><td><strong>PDF nativo</strong></td><td>Stream binário</td><td>Reconstruir ordem do texto</td></tr>
+        <tr><td><strong>PDF tabelas</strong></td><td>Coordenadas X,Y</td><td>Inferir grade sem metadados</td></tr>
+        <tr><td><strong>Escaneado</strong></td><td>Pixels RGB</td><td>Não há texto &mdash; precisa de OCR</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <blockquote>A qualidade do seu pipeline de IA começa aqui &mdash; <strong>antes do embedding, antes do modelo.</strong></blockquote>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h1>Parte 2</h1>
+    <h2>HTML e Regex</h2>
+    <div>
+      <span class="tool-tag">BeautifulSoup</span>
+      <span class="tool-tag">regex</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>BS4: Extraindo Texto Limpo</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Página Web de Legislação com tags, atributos e comentários misturados no conteúdo real.</div>
+    <div class="cols cols-3">
+      <div class="part2-original">
+        <p class="label">Texto original (HTML)</p>
+        <pre><code class="language-html">&lt;h1&gt;CAPÍTULO III&lt;/h1&gt;
+&lt;h2&gt;Da Política Agrícola e Fundiária&lt;/h2&gt;
+&lt;p class="artigo"&gt;&lt;strong&gt;Art. 184.&lt;/strong&gt; Compete à União desapropriar...&lt;/p&gt;
+&lt;!-- Nota: Atualizado pela EC 123 --&gt;</code></pre>
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">soup = BeautifulSoup(html_bruto,
+                     'html.parser')
+
+texto = soup.get_text(
+    separator='\n', strip=True
+)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">CAPÍTULO III
+Da Política Agrícola e Fundiária
+Art. 184. Compete à União desapropriar...</code></pre>
+      </div>
+    </div>
+    <div class="result-box">Todas as tags, marcações <code>&lt;strong&gt;</code> e comentários sumiram &mdash; sobrou só o <strong>conteúdo textual</strong>.</div>
+  </section>
+
+  <section>
+    <h2>BS4: Navegando a Árvore HTML</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> A mesma página estruturada contendo títulos, artigos e parágrafos.</div>
+    <div class="cols cols-3">
+      <div class="part2-original">
+        <p class="label">Texto original (HTML)</p>
+        <pre><code class="language-html">&lt;h1&gt;CAPÍTULO III&lt;/h1&gt;
+&lt;p class="artigo"&gt;Art. 184. Compete...&lt;/p&gt;
+&lt;p class="paragrafo"&gt;§ 1º As benfeitorias úteis...&lt;/p&gt;
+&lt;p class="paragrafo"&gt;§ 2º O decreto que declarar...&lt;/p&gt;</code></pre>
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">titulo = soup.find('h1')
+artigos = soup.find_all(class_='artigo')
+paragrafos = soup.find_all(
+    'p', class_='paragrafo'
+)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">Título: CAPÍTULO III
+
+Artigos Encontrados:
+ -&gt; Art. 184. Compete...
+
+Parágrafos (§):
+ &bull; § 1º As benfeitorias úteis...
+ &bull; § 2º O decreto que declarar...</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>BS4: Tabela HTML &rarr; Dados Estruturados</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Tabela Web do Banco Central com Código e Quantitativos de FCBC.</div>
+    <div class="cols cols-3">
+      <div class="part2-original">
+        <p class="label">Texto original (HTML)</p>
+        <pre><code class="language-html">&lt;table id="fcbc"&gt;
+  &lt;tr&gt;&lt;th&gt;CÓDIGO&lt;/th&gt;&lt;th&gt;QUANT.&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;FDS-1/FDJ-1&lt;/td&gt;&lt;td&gt;3&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;FDE-1/FCA-1&lt;/td&gt;&lt;td&gt;45&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">tabela = soup.find('table', id='fcbc')
+dados = []
+for linha in tabela.find_all('tr'):
+    celulas = [
+        td.get_text(strip=True)
+        for td in linha.find_all(
+            ['th', 'td'])
+    ]
+    dados.append(celulas)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">CÓDIGO           | QUANTITATIVO
+-----------------+--------------
+FDS-1/FDJ-1      | 3
+FDE-1/FCA-1      | 45</code></pre>
+      </div>
+    </div>
+    <div class="result-box">BS4 iterou perfeitamente as <code>&lt;tr&gt;</code> e <code>&lt;td&gt;</code> mantendo as <strong>linhas pareadas</strong>.</div>
+  </section>
+
+  <section>
+    <h2>Regex: Extraindo Padrões do Texto</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Texto extraído do Relatório de Transações com IDs, datas e valores (R$) misturados na página web.</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Página Web / Print</p>
+        <img src="print_tabela.png" alt="Tabela de Transações" style="border-radius: 8px; width: 100%; object-fit: cover; object-position: top left; height: 200px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">texto = soup.get_text('\n', strip=True)
+
+ids = re.findall(
+    r'#TRX-\d{5}', texto)
+
+datas = re.findall(
+    r'\d{2}/\d{2}/\d{4}', texto)
+
+valores = re.findall(
+    r'R\$\s?[\d.,]+', texto)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">IDs Encontrados:
+  ['#TRX-99210', '#TRX-99211', '#TRX-99212']
+
+Datas de Processamento:
+  ['25/03/2026', '26/03/2026', '26/03/2026']
+
+Valores Financeiros:
+  ['R$ 450,00', 'R$ 2.890,00', 'R$ 125,50']</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Regex: Rasuras e Limpeza</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Texto do Relatório de Pagamentos com espaçamentos excessivos e transações estornadas.</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Página Web / Print</p>
+        <img src="print_tabela.png" alt="Tabela de Transações" style="border-radius: 8px; width: 100%; object-fit: cover; object-position: top left; height: 200px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python"># Identificando status de alerta
+pendentes = re.findall(r'Pendente', texto)
+
+# Limpeza estrutural
+texto_limpo = re.sub(
+    r'\n{3,}', '\n\n', texto)
+
+texto_limpo = re.sub(
+    r' {2,}', ' ', texto_limpo)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">Alertas de Status Encontrados:
+  ['Pendente']
+
+Texto limpo e padronizado:
+Relatório Mensal de Processamento de Pagamentos
+Referência: Março de 2026
+Visão Geral
+Durante o período atual, observamos um aumento
+de 12% no volume transacional...
+Tabela de Transações Recentes
+ID da Transação Cliente Data Método Valor Status
+#TRX-99210 Mariana Silva 25/03/2026 PIX R$ 450,00 Concluído
+#TRX-99211 Tech Soluções 26/03/2026 Boleto R$ 2.890,00 Pendente
+#TRX-99212 João Pedro Santos 26/03/2026 Crédito (1x) R$ 125,50 Concluído</code></pre>
+      </div>
+    </div>
+    <div class="highlight-box">BS4 extrai o conteúdo HTML, regex refina espaços e encontra padrões. <strong>São complementares.</strong></div>
+  </section>
+
+  <section>
+    <h2>Trade-offs &mdash; Parte 2</h2>
+    <table>
+      <thead><tr><th>Ferramenta</th><th class="green">Vantagens</th><th class="red">Limitações</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BeautifulSoup</strong></td><td>Entende a árvore HTML, navega por tags, preserva tabelas</td><td>Só funciona com HTML/XML</td></tr>
+        <tr><td><strong>Regex</strong></td><td>Rápido, sem dependências, controle total</td><td>Frágil com formatos variáveis</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <blockquote>HTML resolvido. Mas docs corporativos estão em <strong>PDF</strong>. BS4 não lê PDFs.</blockquote>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h1>Parte 3</h1>
+    <h2>PDFs Simples</h2>
+    <div>
+      <span class="tool-tag">PyMuPDF (fitz)</span>
+      <span class="tool-tag">pdfplumber</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>PyMuPDF: Texto Corrido + Regex</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> PDF nativo digital com texto corrido de legislação (Art. 184).</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Texto original no PDF</p>
+        <img src="print_artigo182.png" alt="Artigo 184" style="border-radius: 8px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">import fitz  # PyMuPDF
+
+doc = fitz.open(stream=pdf_bytes,
+                filetype="pdf")
+texto = doc[0].get_text()
+doc.close()
+
+artigos = re.findall(
+  r'Art\. \d+', texto)
+paragrafos = re.findall(
+  r'§ \dº', texto)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">CAPÍTULO III
+Da Política Agrícola e Fundiária...
+
+Art. 184. Compete à União desapropriar
+por interesse social, para fins de
+reforma agrária...
+---
+Artigos: ['Art. 184']
+Parágrafos: ['§ 1º', '§ 2º', '§ 3º', '§ 4º', '§ 5º']</code></pre>
+      </div>
+    </div>
+    <div class="result-box">Texto limpo, ordem correta. Perfeito para <strong>texto corrido</strong> e extração de regras.</div>
+  </section>
+
+  <section>
+    <h2>PyMuPDF <span class="red">FALHA</span> em Tabelas</h2>
+    <div class="cols">
+      <div>
+        <p class="label">Tabela original no PDF</p>
+        <img src="print_tabela_bc.png" alt="Tabela Banco Central" style="border-radius: 8px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">PyMuPDF extrai assim</p>
+        <pre><code class="language-text">FUNÇÕES COMISSIONADAS DO BANCO CENTRAL - FCBC
+DIREÇÃO/ASSESSORAMENTO
+CÓDIGO
+QUANTITATIVO
+VALOR UNITÁRIO (R$) EM 2025
+VALOR UNITÁRIO (R$) A PARTIR DE 2026
+FDS-1/FDJ-1
+3
+13.624,02
+16.757,55
+FDE-1/FCA-1
+45
+...</code></pre>
+      </div>
+    </div>
+    <div class="warn-box">Colunas misturadas! Lê na ordem do PDF, <strong>não entende a grade</strong>.</div>
+  </section>
+
+  <section>
+    <h2>pdfplumber <span class="green">RESOLVE</span> Tabelas</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Página PDF com tabela de FCBC em grade visual.</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Tabela original no PDF</p>
+        <img src="print_tabela_bc.png" alt="Tabela Banco Central" style="border-radius: 8px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">import pdfplumber
+
+with pdfplumber.open(pdf_path) as pdf:
+    pagina = pdf.pages[0]
+    tabela = pagina.extract_table()
+
+for linha in tabela:
+    print(linha)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">['CÓDIGO',      'QUANTITATIVO', 'VALOR (R$) 2025', 'VALOR (R$) 2026']
+['FDS-1/FDJ-1', '3',            '13.624,02',       '16.757,55']
+['FDE-1/FCA-1', '45',           '10.992,27',       '12.860,95']
+['FDE-2/FCA-2', '106',          '8.464,18',        '9.225,95']
+['FDT-1/FCA-3', '290',          '5.226,27',        '5.696,63']</code></pre>
+      </div>
+    </div>
+    <div class="result-box">Estrutura preservada! Analisa <strong>linhas e bordas</strong> para reconstruir a grade.</div>
+  </section>
+
+  <section>
+    <h2>Comparação: PyMuPDF vs pdfplumber</h2>
+    <table>
+      <thead><tr><th></th><th>PyMuPDF</th><th>pdfplumber</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Texto corrido</strong></td><td class="green">Perfeito, muito rápido</td><td>Funciona, mais lento</td></tr>
+        <tr><td><strong>Tabelas</strong></td><td class="red">Perde estrutura</td><td class="green">Preserva grade</td></tr>
+        <tr><td><strong>Velocidade</strong></td><td class="green">Muito rápido</td><td class="yellow">Mais lento</td></tr>
+        <tr><td><strong>OCR</strong></td><td class="red">Não faz</td><td class="red">Não faz</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <blockquote><strong>PyMuPDF para texto, pdfplumber para tabelas.</strong><br>Mas para docs complexos, ambos perdem a estrutura semântica.</blockquote>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h1>Parte 4</h1>
+    <h2>Documentos Complexos</h2>
+    <div>
+      <span class="tool-tag">Docling</span>
+      <span class="tool-tag">Unstructured</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>O Problema: PyMuPDF Perde Hierarquia</h2>
+    <pre><code class="language-text">Relatório Mensal de Processamento de Pagamentos   &lt;-- título? parágrafo?
+Visão Geral                                       &lt;-- subtítulo ou texto?
+Durante o período atual, observamos um aumento
+de 12% no volume transacional...
+Tabela de Transações Recentes                     &lt;-- tudo é flat
+ID da Transação Cliente Data
+#TRX-99210 Mariana Silva 25/03/2026</code></pre>
+    <div class="warn-box">PyMuPDF extrai tudo <strong>flat</strong> &mdash; título vira texto igual a parágrafo. Para RAG, isso é um problema.</div>
+  </section>
+
+  <section>
+    <h2>Docling: Markdown com Hierarquia</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Relatório Mensal com texto e tabela de transações sem marcação semântica.</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Texto original</p>
+        <img src="print_transacoes.png" alt="Relatório de Transações" style="border-radius: 8px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">from docling.document_converter \
+    import DocumentConverter
+
+converter = DocumentConverter()
+resultado = converter.convert(pdf)
+md = resultado.document\
+    .export_to_markdown()</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-markdown"># Relatório Mensal de Processamento de Pagamentos
+
+Referência: Março de 2026
+
+## Visão Geral
+
+Durante o período atual, observamos um aumento de 12% no volume transacional...
+
+## Tabela de Transações Recentes
+
+| ID da Transação | Cliente | Data | Método | Valor | Status |
+|---|---|---|---|---|---|
+| #TRX-99210 | Mariana Silva | 25/03/2026 | PIX | R$ 450,00 | Concluído |
+| #TRX-99211 | Tech Soluções | 26/03/2026 | Boleto | R$ 2.890,00 | Pendente |</code></pre>
+      </div>
+    </div>
+    <div class="result-box">Hierarquia: <strong># título, ## seção</strong> e tabelas formatadas em Markdown perfeitamente.</div>
+  </section>
+
+  <section>
+    <h2>Unstructured: Elementos Tipados</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> O mesmo PDF de Pagamentos passando por particionamento automático.</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Texto original</p>
+        <img src="print_transacoes.png" alt="Relatório de Transações" style="border-radius: 8px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">from unstructured.partition.pdf \
+    import partition_pdf
+
+elementos = partition_pdf(
+    pdf_path, strategy="auto")
+
+for elem in elementos:
+    tipo = type(elem).__name__
+    print(f"[{tipo}] {elem}")</code></pre>
+      </div>
+      <div>
+        <p class="label">Tipos semânticos</p>
+        <pre><code class="language-text">[ 0] Title          | Relatório Mensal...
+[ 1] NarrativeText  | Referência: Março...
+[ 2] Title          | Visão Geral
+[ 3] NarrativeText  | Durante o período...
+[ 4] NarrativeText  | A maior parte das...
+[ 5] Title          | Tabela de Transações...
+[ 6] Table          | ID da Transação | ...
+[ 7] Title          | Observações Técnicas
+
+Distribuição: Title: 4  NarrativeText: 4
+              Table: 1</code></pre>
+      </div>
+    </div>
+    <div class="highlight-box">Cada bloco tem <strong>tipo semântico</strong>. Continue para ver a tabela extraída →</div>
+  </section>
+
+  <section>
+    <h2>Unstructured: Tabela Extraída (elemento [6])</h2>
+    <div class="input-box"><strong>Elemento tipado:</strong> <code>Table</code> &mdash; o Unstructured isola a tabela como bloco independente, pronto para usar.</div>
+    <div class="cols" style="gap:18px; align-items:flex-start;">
+      <div style="flex:1;">
+        <p class="label">Tabela bruta (texto plano)</p>
+        <pre><code class="language-text">ID da Transação  | Cliente           | Data       | Método       | Valor       | Status
+#TRX-99210       | Mariana Silva     | 25/03/2026 | PIX          | R$ 450,00   | Concluído
+#TRX-99211       | Tech Soluções     | 26/03/2026 | Boleto       | R$ 2.890,00 | Pendente
+#TRX-99212       | João P. Santos    | 26/03/2026 | Crédito (1x) | R$ 125,50   | Concluído</code></pre>
+      </div>
+      <div style="flex:1;">
+        <p class="label">Filtrando só tabelas</p>
+        <pre><code class="language-python">from unstructured.documents.elements \
+    import Table
+
+tabelas = [e for e in elementos
+           if isinstance(e, Table)]
+
+print(tabelas[0].text)</code></pre>
+        <div class="result-box" style="margin-top:10px;">Unstructured isola o elemento <strong>Table</strong> sem regex manual &mdash; diferente do PyMuPDF que retorna tudo flat.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Regex no Pós-Processamento</h2>
+    <div class="input-box"><strong>Texto original (antes):</strong> Markdown gerado pelo Docling contendo texto sobre volume e tabela com valores.</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Texto original</p>
+        <pre><code class="language-markdown">...aumento de 12% no volume...
+| #TRX-99210 | PIX | R$ 450,00 |
+| #TRX-99211 | Boleto | R$ 2.890,00 |</code></pre>
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python"># No Markdown do Docling
+valores = re.findall(
+    r'R\$\s?[\d.,]+', markdown)
+percentuais = re.findall(
+    r'[+-]?\d+[.,]?\d*%', markdown)
+secoes = re.findall(
+    r'^#+\s+(.+)$', markdown,
+    re.MULTILINE)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">Valores monetários (Tabela):
+  ['R$ 450,00', 'R$ 2.890,00',
+   'R$ 125,50', 'R$ 1.200,00', ...]
+
+Percentuais (Texto):
+  ['12%', '98,4%']
+
+Seções Encontradas:
+  ['Relatório Mensal de Processamento...',
+   'Visão Geral',
+   'Tabela de Transações Recentes']</code></pre>
+      </div>
+    </div>
+    <div class="highlight-box">Mesmo com Docling/Unstructured, <strong>regex continua essencial</strong> para padrões específicos.</div>
+  </section>
+
+  <section>
+    <h2>Trade-offs &mdash; Parte 4</h2>
+    <table>
+      <thead><tr><th>Ferramenta</th><th class="green">Vantagens</th><th class="red">Limitações</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Docling (nativo)</strong></td><td>Markdown hierárquico, rápido</td><td>Pode errar em layouts complexos</td></tr>
+        <tr><td><strong>Docling + modelo</strong></td><td>Melhor detecção de layout</td><td>Mais lento, requer modelo</td></tr>
+        <tr><td><strong>Unstructured</strong></td><td>Auto-detecção de tipos</td><td>Config verbosa, resultado varia</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <blockquote><strong>Todos assumem texto digital.</strong> E quando é imagem escaneada?</blockquote>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h1>Parte 5</h1>
+    <h2>OCR (Documentos Escaneados)</h2>
+    <div>
+      <span class="tool-tag">Tesseract</span>
+      <span class="tool-tag">Gemini (visão)</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tesseract: Imagem Limpa vs Degradada</h2>
+    <div class="ocr-grid">
+      <div class="ocr-shot">
+        <h4>Imagem limpa (OCR bom)</h4>
+        <img src="print_artigo182.png" alt="Artigo Limpo" style="width: 100%; height: 140px; object-fit: cover; object-position: top center; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+      </div>
+      <div class="ocr-shot blur">
+        <h4>Imagem borrada / ruidosa</h4>
+        <img src="print_artigo182.png" alt="Artigo Degradado" style="width: 100%; height: 140px; object-fit: cover; object-position: top center; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); filter: blur(0.8px) grayscale(100%) contrast(140%) brightness(0.9);">
+      </div>
+    </div>
+    <div class="cols" style="margin-top: 10px;">
+      <div>
+        <p class="label">Imagem limpa &mdash; OK</p>
+        <pre><code class="language-text">CAPÍTULO III
+Da Política Agrícola e Fundiária e da Reforma Agrária
+
+Art. 184. Compete à União desapropriar por interesse
+social, para fins de reforma agrária, o imóvel rural...
+
+§ 1º As benfeitorias úteis e necessárias serão...</code></pre>
+      </div>
+      <div>
+        <p class="label">Imagem degradada (blur+ruido+rotacao)</p>
+        <pre><code class="language-text">CAPITUL0 III
+Da PoIitica AgricoIa c Fundiaria c da Rcforma Agraria
+
+Art. l84. Compctc a Uniao dcsapropriar por intcressc
+sociaI, oara fins dc rcf0rma agraria, o imoveI rura1...
+
+$ lº As benfcitorias utcis c nccessarias scrao...</code></pre>
+      </div>
+    </div>
+    <div class="warn-box">Erros sistemáticos: <strong>i&rarr;l, O&rarr;0, c&rarr;e, 1&rarr;l</strong> &mdash; caracteres pequenos em documentos legais sofrem muito com ruído.</div>
+  </section>
+
+  <section>
+    <h2>LLM com Visão &mdash; Mesma Imagem Degradada</h2>
+    <div class="input-box"><strong>Entrada da LLM:</strong> imagem ruidosa da Constituição (não texto bruto).</div>
+    <div class="cols cols-3">
+      <div>
+        <p class="label">Entrada (imagem degradada)</p>
+        <pre><code class="language-text">[IMAGEM: print_artigo_ruim.png]
+- ruido
+- blur
+- perda de acentuacao
+- artefatos de compressao</code></pre>
+      </div>
+      <div>
+        <p class="label">Código</p>
+        <pre><code class="language-python">prompt = """Extraia TODO o texto
+desta imagem de legislação.
+Preserve a pontuação e os
+parágrafos originais.
+Não invente dados."""
+
+resposta = model.generate_content(
+    [prompt, img_degradada]
+)</code></pre>
+      </div>
+      <div>
+        <p class="label">Resultado</p>
+        <pre><code class="language-text">CAPÍTULO III
+Da Política Agrícola e Fundiária e da Reforma Agrária
+
+Art. 184. Compete à União desapropriar por interesse social, para fins de reforma agrária, o imóvel rural que não esteja cumprindo sua função social, mediante prévia e justa indenização em títulos da dívida agrária...
+
+§ 1º As benfeitorias úteis e necessárias serão indenizadas em dinheiro.</code></pre>
+      </div>
+    </div>
+    <div class="result-box">A LLM <strong>entende o contexto legal</strong>: corrige todos os erros ("Compctc" para "Compete") e recupera a acentuação.</div>
+  </section>
+
+  <section>
+    <h2>Pipeline: Tesseract &rarr; LLM</h2>
+    <pre><code class="language-python">prompt = f"""Você recebeu o resultado de um OCR (Tesseract) de um documento legal.
+O OCR pode conter erros. Use a IMAGEM como referência para corrigir.
+
+REGRAS:
+- Corrija erros de OCR (caracteres trocados, palavras sem acento)
+- Preserve a estrutura original (artigos, incisos, parágrafos)
+- NÃO invente dados que não estão na imagem
+- Se não conseguir ler uma palavra, marque como [ilegível]
+
+TEXTO DO OCR (Tesseract):
+{texto_tesseract}
+
+Corrija o texto acima usando a imagem como referência."""
+
+resposta = model.generate_content([prompt, imagem])</code></pre>
+    <div class="highlight-box">Texto do Tesseract serve de <strong>âncora</strong> &mdash; a LLM corrige as falhas pontuais do documento ruidoso em vez de alucinar do zero.</div>
+  </section>
+
+  <section>
+    <h2>Comparação dos 3 Métodos</h2>
+    <table>
+      <thead><tr><th>Critério</th><th>Tesseract</th><th>LLM (Visão)</th><th>Tesseract + LLM</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Custo</strong></td><td class="green">Grátis</td><td class="red">$$$ tokens</td><td class="yellow">$$ tokens</td></tr>
+        <tr><td><strong>Latência</strong></td><td class="green">~100ms</td><td class="yellow">~2-5s</td><td class="yellow">~3-6s</td></tr>
+        <tr><td><strong>Precisão (limpa)</strong></td><td class="green">Alta</td><td class="green">Alta</td><td class="green">Alta</td></tr>
+        <tr><td><strong>Precisão (degradada)</strong></td><td class="red">Baixa</td><td class="green">Alta</td><td class="green">Muito alta</td></tr>
+        <tr><td><strong>Tabelas/Formatação</strong></td><td class="red">Perde</td><td class="green">Preserva</td><td class="green">Preserva</td></tr>
+        <tr><td><strong>Alucinação</strong></td><td class="green">Zero</td><td class="yellow">Possível</td><td class="green">Mínima</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <blockquote>O pipeline <strong>Tesseract &rarr; LLM</strong> é o padrão de produção real.</blockquote>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h1>Parte 6</h1>
+    <h2>Extração Estruturada com LLM</h2>
+    <div><span class="tool-tag">LLM &rarr; JSON</span></div>
+  </section>
+
+  <section>
+    <h2>Relatório de Pagamentos &rarr; JSON</h2>
+    <div class="cols">
+      <div>
+        <p class="label">Entrada (texto do Docling)</p>
+        <pre><code class="language-text">| ID da Transação | Cliente | Data | Método | Valor | Status |
+|---|---|---|---|---|---|
+| #TRX-99210 | Mariana Silva | 25/03/2026 | PIX | R$ 450,00 | Concluído |
+| #TRX-99211 | Tech Soluções | 26/03/2026 | Boleto | R$ 2.890,00 | Pendente |
+| #TRX-99212 | João Pedro Santos | 26/03/2026 | Crédito (1x) | R$ 125,50 | Concluído |</code></pre>
+      </div>
+      <div>
+        <p class="label">Saída (JSON da LLM)</p>
+        <pre><code class="language-json">{"transacoes": [
+  {"id": "TRX-99210",
+   "cliente": "Mariana Silva",
+   "data": "2026-03-25",
+   "metodo": "PIX",
+   "valor": 450.00,
+   "status": "concluido"},
+  {"id": "TRX-99211",
+   "cliente": "Tech Soluções",
+   "data": "2026-03-26",
+   "metodo": "Boleto",
+   "valor": 2890.00,
+   "status": "pendente"}
+]}</code></pre>
+      </div>
+    </div>
+    <div class="result-box">A LLM converteu tabelas Markdown em Arrays, padronizou <strong>Datas (ISO)</strong> e <strong>Valores (float)</strong>.</div>
+  </section>
+
+  <section>
+    <h2>Regex <span class="vs">vs</span> LLM &mdash; Mesma Tarefa</h2>
+    <div class="cols">
+      <div>
+        <h3 class="red">Regex (~20 linhas)</h3>
+        <pre><code class="language-python">linhas = re.findall(
+  r'\|\s*(#TRX-\d+)\s*\|\s*([^|]+?)'
+  r'\s*\|\s*(\d{2}/\d{2}/\d{4})\s*\|'
+  r'\s*([^|]+?)\s*\|\s*R\$ ([^|]+?)'
+  r'\s*\|\s*([^|]+?)\s*\|',
+  texto_tabela)
+
+for tid, cliente, dt, met, val, st in linhas:
+    # + conversão de data
+    # + tratamento de floats
+    # + normalização de status
+    # + muito frágil a mudanças no layout...</code></pre>
+      </div>
+      <div>
+        <h3 class="green">LLM (~5 linhas)</h3>
+        <pre><code class="language-python">prompt = f"""Extraia as transacoes
+em JSON no formato:
+[{{"id": str,
+   "cliente": str,
+   "data": YYYY-MM-DD,
+   "metodo": str,
+   "valor": float,
+   "status": str}}]
+
+TEXTO:
+{texto_tabela}"""
+
+dados = json.loads(
+    model.generate_content(prompt)
+    .text
+)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Comparação Final: Regex vs LLM</h2>
+    <table>
+      <thead><tr><th>Critério</th><th>Regex</th><th>LLM</th></tr></thead>
+      <tbody>
+        <tr><td>Linhas de código</td><td>~20+ (padrões)</td><td>~5 (prompt)</td></tr>
+        <tr><td>Tempo de dev</td><td>Minutos a horas</td><td>Segundos</td></tr>
+        <tr><td>Flexibilidade</td><td class="red">Frágil (formato fixo)</td><td class="green">Robusta (contexto)</td></tr>
+        <tr><td>Inconsistências</td><td class="red">Quebra</td><td class="green">Interpreta</td></tr>
+        <tr><td>Custo</td><td class="green">Zero</td><td class="yellow">$$$ por token</td></tr>
+        <tr><td>Latência</td><td class="green">Microssegundos</td><td class="yellow">Segundos</td></tr>
+        <tr><td>Determinismo</td><td class="green">100%</td><td class="red">Varia</td></tr>
+        <tr><td>Alucinação</td><td class="green">Impossível</td><td class="red">Pode inventar</td></tr>
+      </tbody>
+    </table>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h1>Conclusão</h1>
+    <h2>Pipeline Híbrido de Produção</h2>
+  </section>
+
+  <section>
+    <h2>Fluxo Completo</h2>
+    <div class="pipeline-box">
+      <span style="color:var(--ceia-cyan);">Documento chega</span><br>
+      &nbsp;&nbsp;|<br>
+      &nbsp;&nbsp;+-- É HTML?<br>
+      &nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;+-- <span class="green">BeautifulSoup</span> &rarr; <span class="yellow">Regex</span> (limpeza) &rarr; texto limpo<br>
+      &nbsp;&nbsp;|<br>
+      &nbsp;&nbsp;+-- É PDF nativo?<br>
+      &nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;+-- Simples &rarr; <span class="green">PyMuPDF</span> &rarr; <span class="yellow">Regex</span><br>
+      &nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;+-- Tabelas &rarr; <span class="green">pdfplumber</span> &rarr; pandas<br>
+      &nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;+-- Complexo &rarr; <span class="green">Docling / Unstructured</span> &rarr; Markdown<br>
+      &nbsp;&nbsp;|<br>
+      &nbsp;&nbsp;+-- É escaneado / imagem?<br>
+      &nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;+-- <span class="green">Tesseract</span> (OCR) &rarr; <span class="purple">LLM</span> (correção) &rarr; texto limpo<br>
+      &nbsp;&nbsp;|<br>
+      &nbsp;&nbsp;+-- Pós-processamento final<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+-- <span class="purple">LLM</span> &rarr; JSON estruturado &rarr; banco / RAG<br>
+    </div>
+    <br>
+    <blockquote><strong>Regex aparece em todas as etapas.</strong> Nenhuma ferramenta resolve tudo sozinha.</blockquote>
+  </section>
+
+  <section>
+    <h2>Guia Rápido de Ferramentas</h2>
+    <table>
+      <thead><tr><th>Ferramenta</th><th>Melhor para</th><th>Evitar quando</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Regex</strong></td><td>Pós-processamento, padrões</td><td>Ferramenta primária de parsing</td></tr>
+        <tr><td><strong>BeautifulSoup</strong></td><td>HTML / XML estruturado</td><td>Docs não-HTML</td></tr>
+        <tr><td><strong>PyMuPDF</strong></td><td>PDF nativo, texto corrido</td><td>Tabelas ou escaneados</td></tr>
+        <tr><td><strong>pdfplumber</strong></td><td>Tabelas em PDF nativo</td><td>Escaneados ou sem bordas</td></tr>
+        <tr><td><strong>Docling</strong></td><td>Docs complexos / RAG</td><td>Scripts simples</td></tr>
+        <tr><td><strong>Unstructured</strong></td><td>Particionamento automático</td><td>Controle fino necessário</td></tr>
+        <tr><td><strong>Tesseract</strong></td><td>OCR gratuito / offline</td><td>Precisão crítica</td></tr>
+        <tr><td><strong>Tesseract + LLM</strong></td><td>OCR em produção</td><td>Orçamento zero</td></tr>
+        <tr><td><strong>LLM (texto)</strong></td><td>Extração estruturada</td><td>Volume massivo</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="final-logo-wrap">
+      <img src="logo_ceia_transparent.png" alt="Logo CEIA" class="ceia-logo-img" style="margin-bottom: 26px; width: 360px;">
+    </div>
+    <h1>Obrigado!</h1>
+    <br>
+    <p style="color:rgba(255,255,255,0.65);font-size:0.75em;">Grupo de Estudos NLP &mdash; INF-UFG / CEIA</p>
+    <br>
+    <div class="highlight-box" style="text-align:center;">
+      Notebook completo disponível no Google Colab com todos os exemplos executáveis
+    </div>
+  </section>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<script>
+   Reveal.initialize({
+     hash: true,
+     slideNumber: 'c/t',
+     transition: 'slide',
+     transitionSpeed: 'default',
+     center: true,
+     plugins: [ RevealHighlight ],
+     width: 1366,
+     height: 768,
+     margin: 0.04,
+     minScale: 0.2,
+     maxScale: 2.0,
+   });
+</script>
+</body>
+</html>
